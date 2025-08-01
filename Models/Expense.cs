@@ -20,7 +20,7 @@ namespace ExpenseTracker.Models
         public DateTime Date { get; set; }
         public required string Category { get; set; }
         public string UserId { get; set; }
-        public IdentityUser User { get; set; }
+        public ApplicationUser User { get; set; }
 
     }
 }
