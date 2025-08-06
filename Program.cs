@@ -1,6 +1,8 @@
 using System;
 using ExpenseTracker.Data;
 using ExpenseTracker.Models;
+using ExpenseTracker.Services;
+using ExpenseTracker.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +27,12 @@ namespace ExpenseTracker
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             builder.Services.AddControllersWithViews();
+
+            builder.Services.AddScoped<IUserContextService, UserContextService>();
+            builder.Services.AddScoped<IExpenseService, ExpenseServiceContext>();
+
+            builder.Services.AddHttpContextAccessor();
+
 
             var app = builder.Build();
 
