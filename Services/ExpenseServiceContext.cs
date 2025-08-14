@@ -27,7 +27,7 @@ namespace ExpenseTracker.Services
                 throw new ArgumentNullException(nameof(expense));
             }
             _context.Expenses.Add(expense);
-            await _context.SaveChangesAsync();
+           await _context.SaveChangesAsync();
         }
 
         public async Task UpdateExpenseAsync(Expense expense)

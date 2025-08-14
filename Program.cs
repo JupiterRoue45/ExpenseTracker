@@ -12,6 +12,7 @@ namespace ExpenseTracker
     {
         public static void Main(string[] args)
         {
+            Console.WriteLine("Starting Expense Tracker...");
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
@@ -20,11 +21,8 @@ namespace ExpenseTracker
                 options.UseSqlServer(connectionString));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-            builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+            builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
                 .AddEntityFrameworkStores<ApplicationDbContext>();
-
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             builder.Services.AddControllersWithViews();
 
@@ -32,6 +30,7 @@ namespace ExpenseTracker
             builder.Services.AddScoped<IExpenseService, ExpenseServiceContext>();
 
             builder.Services.AddHttpContextAccessor();
+            builder.Services.AddRazorPages();
 
 
             var app = builder.Build();
@@ -49,17 +48,19 @@ namespace ExpenseTracker
             }
 
             app.UseHttpsRedirection();
+            app.UseStaticFiles();
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
-            app.MapStaticAssets();
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}")
+                pattern: "{controller=Expenses}/{action=Index}/{id?}")
                 .WithStaticAssets();
-            app.MapRazorPages()
-               .WithStaticAssets();
+
+            app.MapRazorPages().
+                WithStaticAssets();
 
             app.Run();
         }

@@ -1,0 +1,34 @@
+﻿@model IEnumerable<ExpenseTracker.Models.Expense>  
+@{  
+    ViewData["Title"] = "Mes Dépenses";  
+    int i = 1;  
+}  
+
+<h2>Liste des Dépenses</h2>  
+<p></p>  
+<table class="table">  
+    <thead>  
+        <tr>  
+            <th scope="col">#</th> 
+            <th scope="col">Titre</th>
+            <th scope="col">Montant</th>  
+            <th scope="col">Catégorie</th>  
+            <th scope="col">Date</th>  
+        </tr>  
+    </thead>  
+    <tbody>  
+        @foreach (var depense in Model)  
+        {
+            <tr>  
+                <td scope="row">@i</td> 
+                <td>@depense.Title</td>
+                <td>@depense.Amount</td>  
+                <td>@depense.Category</td>  
+                <td>@depense.Date.ToString("D")</td>  
+            </tr>
+            i++;
+        }  
+    </tbody>  
+</table>  
+
+<a asp-controller="Expenses" asp-action="Create" class="btn btn-primary">Ajouter une dépense</a>

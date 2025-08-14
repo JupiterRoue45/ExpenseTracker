@@ -9,7 +9,7 @@ namespace ExpenseTracker.Models
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
 
-        [Range(18, 100, ErrorMessage = "Minors and above 100 years old are not allowed!")]
+        [Range(18, 100, ErrorMessage = "Minors and older than 100 years old are not allowed!")]
         public required int Age { get; set; }
         public required string Occupation { get; set; } 
     }

@@ -1,9 +1,11 @@
-﻿using ExpenseTracker.Data;
+﻿using System.Threading.Tasks;
+using ExpenseTracker.Data;
 using ExpenseTracker.Models;
 using ExpenseTracker.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Controllers
@@ -21,6 +23,7 @@ namespace ExpenseTracker.Controllers
             _userContextService = userContextService ?? throw new ArgumentNullException(nameof(userContextService));
             _expenseService = expenseService ?? throw new ArgumentNullException(nameof(expenseService));
         }
+        
         [Authorize]
         public async Task<IActionResult> Index()
         {
@@ -32,18 +35,59 @@ namespace ExpenseTracker.Controllers
             var expenses = await _expenseService.GetExpensesByUserIdAsync(userId);
             return View(expenses);
         }
+
+        /*
+        [Authorize]
+        public IActionResult Index()
+        {
+            return Content("Bienvenue sur ExpenseTracker !");
+        }
+        */
+
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Amount,Date,Category")] Expense expense)
+        public async Task<IActionResult> Create([Bind("Title,Amount,Date,Category")] Expense expense)
         {
-            string? userId = await _userContextService.GetCurrentUserIdAsync();
-            if (ModelState.IsValid && userId != null)
+            var userId = await _userContextService.GetCurrentUserIdAsync();
+            if (userId == null) return Unauthorized();
+
+            // Associer l'utilisateur
+            expense.UserId = userId;
+
+            if (!ModelState.IsValid)
             {
-                await _expenseService.CreateExpenseAsync(expense);
+                var errors = ModelState
+                .Where(kv => kv.Value.Errors.Count > 0)
+                .Select(kv => new { Field = kv.Key, Errors = kv.Value.Errors.Select(e => e.ErrorMessage).ToList() })
+                .ToList();
+                foreach(var error in errors)
+                {
+                    Console.WriteLine(error);
+                }
+                // Rester sur la vue pour afficher les erreurs
+                return View(expense);
             }
+
+            await _expenseService.CreateExpenseAsync(expense);
             return RedirectToAction(nameof(Index));
         }
+
+        [Authorize]
+        [HttpGet]
+        public IActionResult Create()
+        {
+            var model = new Expense
+            {
+                Title = "",
+                Amount = 0,
+                Category = "",
+                Date = DateTime.Today
+                // Pas besoin d'initialiser Categories ici : ton initialiseur [NotMapped] le fait déjà
+            };
+            return View(model);
+        }
+
 
         [HttpPost]
         [Authorize]
@@ -73,7 +117,20 @@ namespace ExpenseTracker.Controllers
             return View(expense);
         }
 
+        [HttpGet]
         [Authorize]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var expense = await _expenseService.GetExpenseByIdAsync(id);
+            if (expense == null)
+            {
+                return NotFound();
+            }
+            return View(expense);
+        }
+
+        [Authorize]
+        [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
             var expense = await _expenseService.GetExpenseByIdAsync(id);
