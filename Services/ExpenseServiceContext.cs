@@ -3,6 +3,7 @@ using ExpenseTracker.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using ExpenseTracker.Services.Interfaces;
+using ExpenseTracker.Models.Dto;
 
 
 namespace ExpenseTracker.Services
@@ -30,30 +31,33 @@ namespace ExpenseTracker.Services
            await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateExpenseAsync(Expense expense)
+        public async Task<bool> UpdateExpenseAsync(string userId, int id, ExpenseUpdateDto dto)
         {
+            var expense = await _context.Expenses
+                .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
             if (expense == null)
             {
-                throw new ArgumentNullException(nameof(expense));
+                return false; // Expense not found or does not belong to the user
             }
-            var existingExpense = await _context.Expenses.FindAsync(expense.Id);
-            if (existingExpense == null )
-            {
-                throw new KeyNotFoundException($"Expense with ID {expense.Id} not found.");
-            }
-            _context.Entry(existingExpense).CurrentValues.SetValues(expense);
+            expense.Title = dto.Title;
+            expense.Amount = dto.Amount;
+            expense.Date = dto.Date;
+            expense.Category = dto.Category;
             await _context.SaveChangesAsync();
+            return true; // Update successful
         }
 
-        public async Task DeleteExpenseAsync(int id)
+        public async Task<bool> DeleteExpenseAsync(string UserId, int id)
         {
-            var existingExpense = await _context.Expenses.FindAsync(id);
-            if (existingExpense == null)
+            var expense = await _context.Expenses
+                .FirstOrDefaultAsync(e => e.Id == id && e.UserId == UserId);
+            if (expense == null)
             {
-                throw new KeyNotFoundException($"Expense with ID {id} not found.");
+               return false; // Expense not found or does not belong to the user
             }
-            _context.Expenses.Remove(existingExpense);
+            _context.Expenses.Remove(expense);
             await _context.SaveChangesAsync();
+            return true; // Deletion successful
         }
 
         public async Task<Expense?> GetExpenseByIdAsync(int id)
@@ -66,6 +70,7 @@ namespace ExpenseTracker.Services
         {
             var expenses = await _context.Expenses
                 .Where(e => e.UserId == userId)
+                .AsNoTracking()
                 .ToListAsync();
             return expenses;
         }
@@ -78,6 +83,7 @@ namespace ExpenseTracker.Services
             }
             var expenses = await _context.Expenses
                 .Where(e => e.Category == category)
+                .AsNoTracking()
                 .ToListAsync();
             return expenses;
         }

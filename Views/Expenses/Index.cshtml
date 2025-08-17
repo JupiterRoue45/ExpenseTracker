@@ -13,7 +13,8 @@
             <th scope="col">Titre</th>
             <th scope="col">Montant</th>  
             <th scope="col">Catégorie</th>  
-            <th scope="col">Date</th>  
+            <th scope="col">Date</th>
+			<th scope="col">Actions</th>
         </tr>  
     </thead>  
     <tbody>  
@@ -25,6 +26,9 @@
                 <td>@depense.Amount</td>  
                 <td>@depense.Category</td>  
                 <td>@depense.Date.ToString("D")</td>  
+                <td>
+                    <a asp-controller="Expenses" asp-action="Edit" asp-route-id="@depense.Id" class="btn btn-warning">Modifier</a>
+					<a asp-controller="Expenses" asp-action="Delete" asp-route-id="@depense.Id" class="btn btn-danger">Supprimer</a>
             </tr>
             i++;
         }  

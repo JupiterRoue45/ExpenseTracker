@@ -1,12 +1,11 @@
-﻿using System.Threading.Tasks;
-using ExpenseTracker.Data;
+﻿using ExpenseTracker.Data;
 using ExpenseTracker.Models;
+using ExpenseTracker.Models.Dto;
 using ExpenseTracker.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using ExpenseTracker.Utilities;
 
 namespace ExpenseTracker.Controllers
 {
@@ -23,7 +22,7 @@ namespace ExpenseTracker.Controllers
             _userContextService = userContextService ?? throw new ArgumentNullException(nameof(userContextService));
             _expenseService = expenseService ?? throw new ArgumentNullException(nameof(expenseService));
         }
-        
+
         [Authorize]
         public async Task<IActionResult> Index()
         {
@@ -35,14 +34,6 @@ namespace ExpenseTracker.Controllers
             var expenses = await _expenseService.GetExpensesByUserIdAsync(userId);
             return View(expenses);
         }
-
-        /*
-        [Authorize]
-        public IActionResult Index()
-        {
-            return Content("Bienvenue sur ExpenseTracker !");
-        }
-        */
 
         [Authorize]
         [HttpPost]
@@ -57,15 +48,6 @@ namespace ExpenseTracker.Controllers
 
             if (!ModelState.IsValid)
             {
-                var errors = ModelState
-                .Where(kv => kv.Value.Errors.Count > 0)
-                .Select(kv => new { Field = kv.Key, Errors = kv.Value.Errors.Select(e => e.ErrorMessage).ToList() })
-                .ToList();
-                foreach(var error in errors)
-                {
-                    Console.WriteLine(error);
-                }
-                // Rester sur la vue pour afficher les erreurs
                 return View(expense);
             }
 
@@ -92,29 +74,26 @@ namespace ExpenseTracker.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Amount,Date,Category")] Expense expense)
+        public async Task<IActionResult> Edit(int id, [Bind("Title,Amount,Date,Category")] ExpenseUpdateDto expense)
         {
-            if (id != expense.Id)
+            var userId = await _userContextService.GetCurrentUserIdAsync();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+            if (!ModelState.IsValid)
+            {
+                // Rester sur la vue pour afficher les erreurs
+                return View(expense);
+            }
+            bool updated = await _expenseService.UpdateExpenseAsync(userId, id, expense);
+            if (!updated)
             {
                 return NotFound();
             }
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    await _expenseService.UpdateExpenseAsync(expense);
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (await _expenseService.GetExpenseByIdAsync(expense.Id) == null)
-                    {
-                        return NotFound();
-                    }
-                    throw;
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(expense);
+            return RedirectToAction(nameof(Index));
+
+
         }
 
         [HttpGet]
@@ -122,24 +101,44 @@ namespace ExpenseTracker.Controllers
         public async Task<IActionResult> Edit(int id)
         {
             var expense = await _expenseService.GetExpenseByIdAsync(id);
-            if (expense == null)
+            var userId = await _userContextService.GetCurrentUserIdAsync();
+            if (expense == null || expense.UserId != userId)
             {
                 return NotFound();
             }
-            return View(expense);
+            return View(ExpenseMapper.ToExpenseUpdateDto(expense));
         }
 
         [Authorize]
-        [HttpPost]
+        [HttpGet]
         public async Task<IActionResult> Delete(int id)
         {
+            var userId = await _userContextService.GetCurrentUserIdAsync();
             var expense = await _expenseService.GetExpenseByIdAsync(id);
-            if (expense == null)
+            if (userId == null || expense?.UserId != userId)
             {
                 return NotFound();
             }
-            return View(expense);
+            return View();
         }
 
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [HttpPost, ActionName("Delete")]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var userId = await _userContextService.GetCurrentUserIdAsync();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+            bool deleted = await _expenseService.DeleteExpenseAsync(userId, id);
+            if (!deleted)
+            {
+                return NotFound();
+            }
+            return RedirectToAction(nameof(Index));
+
+        }
     }
 }
